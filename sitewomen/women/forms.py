@@ -1,23 +1,10 @@
 from django import forms
-from .models import Category, Husband
+from django.core.exceptions import ValidationError
+
+from .models import Category, Husband, Women
 
 
-class AddPostForm(forms.Form):
-    title = forms.CharField(max_length=255,
-                            label='Заголовок',
-                            widget=forms.TextInput(attrs={'class': 'form-input'}),
-                            )
-
-    slug = forms.SlugField(max_length=255, label='URL')
-
-    content = forms.CharField(
-        widget=forms.Textarea(attrs={'cols': 50, 'rows': 5}),
-        required=False,
-        label='Контент',
-    )
-
-    is_published = forms.BooleanField(required=False, initial=True, label='Статус')
-
+class AddPostForm(forms.ModelForm):
     cat = forms.ModelChoiceField(queryset=Category.objects.all(),
                                  empty_label='Категория не выбрана',
                                  label='Категория')
@@ -26,3 +13,24 @@ class AddPostForm(forms.Form):
                                      required=False,
                                      label='Муж',
                                      empty_label='Не замужем')
+
+    class Meta:
+        model = Women
+        fields = ['title', 'slug', 'content', 'photo', 'is_published', 'cat', 'husband', 'tags']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-input'}),
+            'content': forms.Textarea(attrs={'cols': 50, 'rows': 5}),
+        }
+        labels = {'slug': 'URL'}
+
+    def clean_title(self):
+        title = self.cleaned_data['title']
+        if len(title) > 50:
+            raise ValidationError('Длина превышает 50 символов')
+
+        return title
+
+
+class UploadFileForm(forms.Form):
+    file = forms.ImageField(label='Файл')
+
